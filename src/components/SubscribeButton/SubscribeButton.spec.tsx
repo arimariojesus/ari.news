@@ -1,37 +1,62 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { mocked } from "ts-jest/utils";
-import { useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
+import { useRouter } from "next/router";
 import { SubscribeButton } from ".";
 
-jest.mock("next-auth/react");
+jest.mock('next-auth/react');
+jest.mock('next/router');
 
-describe("<SignInButton />", () => {
-  it("renders correctly when user is not authenticated", () => {
+describe("<SubscribeButton />", () => {
+  it("renders correctly", () => {
     const useSessionMocked = mocked(useSession);
 
-    useSessionMocked.mockReturnValueOnce({
-      data: null,
-      status: "unauthenticated",
-    });
+    useSessionMocked.mockReturnValueOnce({ data: null, status: 'unauthenticated' });
+    
+    render(<SubscribeButton />);
+
+    expect(screen.getByText("Subscribe now")).toBeInTheDocument();
+  });
+
+  it("redirects user to sign in when not authenticated", () => {
+    const signInMocked = mocked(signIn);
+    const useSessionMocked = mocked(useSession);
+
+    useSessionMocked.mockReturnValueOnce({ data: null, status: 'unauthenticated' });
 
     render(<SubscribeButton />);
 
-    expect(screen.getByText("Sign in with Github")).toBeInTheDocument();
+    const subscribeButton = screen.getByText("Subscribe now");
+
+    fireEvent.click(subscribeButton);
+
+    expect(signInMocked).toHaveBeenCalled();
   });
 
-  it("renders correctly when user is authenticated", () => {
+  it("redirects to posts whhen user already has a subscription", () => {
+    const useRouterMocked = mocked(useRouter);
+    const pushMock = jest.fn();
     const useSessionMocked = mocked(useSession);
+
+    useRouterMocked.mockReturnValueOnce({
+      push: pushMock,
+    } as any);
 
     useSessionMocked.mockReturnValueOnce({
       data: {
         user: { name: "John Doe", email: "john.doe@examle.com" },
         expires: "fake-expires",
+        activeSubscription: "fake-acive-subsciption",
       },
       status: "authenticated",
     });
 
     render(<SubscribeButton />);
 
-    expect(screen.getByText("John Doe")).toBeInTheDocument();
+    const subscribeButton = screen.getByText("Subscribe now");
+
+    fireEvent.click(subscribeButton);
+
+    expect(pushMock).toHaveBeenCalledWith('/posts');
   });
 });
