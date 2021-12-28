@@ -35,7 +35,7 @@ describe("Posts page", () => {
                 { type: 'paragraph', text: 'Post excerpt' },
               ],
             },
-            last_publication_date: '27-12-2021',
+            last_publication_date: '12-27-2021',
           }
         ],
       }),
